@@ -109,6 +109,24 @@ static char *format_bitrate(int rate)
     return talloc_asprintf(NULL, "%d kbps", rate * 8 / 1000);
 }
 
+static char *format_file_size(int64_t size)
+{
+    double s = size;
+    if (size < 1024)
+        return talloc_asprintf(NULL, "%.0f", s);
+
+    if (size < (1024 * 1024))
+        return talloc_asprintf(NULL, "%.3f Kb", s / (1024.0));
+
+    if (size < (1024 * 1024 * 1024))
+        return talloc_asprintf(NULL, "%.3f Mb", s / (1024.0 * 1024.0));
+
+    if (size < (1024LL * 1024LL * 1024LL * 1024LL))
+        return talloc_asprintf(NULL, "%.3f Gb", s / (1024.0 * 1024.0 * 1024.0));
+
+    return talloc_asprintf(NULL, "%.3f Tb", s / (1024.0 * 1024.0 * 1024.0 * 1024.0));
+}
+
 static char *format_delay(double time)
 {
     return talloc_asprintf(NULL, "%d ms", ROUND(time * 1000));
@@ -180,6 +198,29 @@ static int mp_property_filename(m_option_t *prop, int action, void *arg,
     int r = m_property_strdup_ro(prop, action, arg, f[0] ? f : filename);
     talloc_free(filename);
     return r;
+}
+
+static int mp_property_file_size(m_option_t *prop, int action, void *arg,
+                                  void *ctx)
+{
+    MPContext *mpctx = ctx;
+    if (!mpctx->stream)
+        return M_PROPERTY_UNAVAILABLE;
+
+    switch (action) {
+    case M_PROPERTY_GET: {
+        int64_t size = -1;
+        stream_control(mpctx->stream, STREAM_CTRL_GET_SIZE, &size);
+        if (size <= 0)
+            break;
+        *(char **)arg = format_file_size(size);
+        return M_PROPERTY_OK;
+    }
+    case M_PROPERTY_SET: {
+        return M_PROPERTY_OK;
+    }
+    }
+    return M_PROPERTY_NOT_IMPLEMENTED;
 }
 
 static int mp_property_media_title(m_option_t *prop, int action, void *arg,
@@ -2271,6 +2312,8 @@ static const m_option_t mp_properties[] = {
     M_OPTION_PROPERTY("loop-file"),
     M_OPTION_PROPERTY_CUSTOM("speed", mp_property_playback_speed),
     { "filename", mp_property_filename, CONF_TYPE_STRING,
+      0, 0, 0, NULL },
+    { "file-size", mp_property_file_size, CONF_TYPE_STRING,
       0, 0, 0, NULL },
     { "path", mp_property_path, CONF_TYPE_STRING,
       0, 0, 0, NULL },
