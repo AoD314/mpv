@@ -59,7 +59,8 @@ int libmpv_audio_callback(struct ao *ao, void *buffer, int len)
     // fixed latency.
     double delay = 2 * len / (double)ao->bps;
 
-    return ao_read_data(ao, &buffer, len / ao->sstride, mp_time_us() + 1000000LL * delay);
+    // int ao_read_data(struct ao *ao, void **data, int samples, int64_t out_time_ns, bool *eof, bool pad_silence, bool blocking)
+    return ao_read_data(ao, &buffer, len / ao->sstride, mp_time_ns() + 1000000LL * delay, NULL, true, true);
 }
 
 static void uninit(struct ao *ao)
@@ -106,9 +107,20 @@ static int init(struct ao *ao)
     return 1;
 }
 
-static void resume (struct ao *ao)
+static void reset(struct ao *ao)
 {
-    return;
+    // struct priv *priv = ao->priv;
+    // if (!priv->paused)
+    //     SDL_PauseAudio(SDL_TRUE);
+    // priv->paused = 1;
+}
+
+static void start(struct ao *ao)
+{
+    // struct priv *priv = ao->priv;
+    // if (priv->paused)
+    //     SDL_PauseAudio(SDL_FALSE);
+    // priv->paused = 0;
 }
 
 #define OPT_BASE_STRUCT struct priv
@@ -118,16 +130,36 @@ const struct ao_driver audio_out_libmpv = {
     .name      = "libmpv",
     .init      = init,
     .uninit    = uninit,
-    .resume    = resume,
+    .reset     = reset,
+    .start     = start,
     .priv_size = sizeof(struct priv),
     .priv_defaults = &(const struct priv) {
         .init = false,
     },
     .options = (const struct m_option[]) {
-        OPT_CHANNELS("channel-layouts", channel_layouts, 0, .min = 1),
-        OPT_INTRANGE("samplerate", samplerate, 0, 1000, 8*48000),
-        OPT_AUDIOFORMAT("format", format, 0),
+        {"channel-layouts", OPT_CHANNELS(channel_layouts)},
+        {"samplerate", OPT_INT(samplerate)},
+        {"format", OPT_INT(format)},
         {0}
     },
     .options_prefix = "ao-libmpv",
 };
+
+
+// const struct ao_driver audio_out_sdl = {
+//     .description = "SDL Audio",
+//     .name      = "sdl",
+//     .init      = init,
+//     .uninit    = uninit,
+//     .reset     = reset,
+//     .start     = start,
+//     .priv_size = sizeof(struct priv),
+//     .priv_defaults = &(const struct priv) {
+//         .buflen = 0, // use SDL default
+//     },
+//     .options = (const struct m_option[]) {
+//         {"buflen", OPT_FLOAT(buflen)},
+//         {0}
+//     },
+//     .options_prefix = "sdl",
+// };
