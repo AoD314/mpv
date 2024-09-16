@@ -22,6 +22,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include "audio/out/ao_libmpv.h"
+#include "audio/format.h"
 #include "common/common.h"
 #include "common/global.h"
 #include "common/msg.h"
@@ -2245,4 +2247,17 @@ bool mp_streamcb_lookup(struct mpv_global *g, const char *protocol,
     }
     mp_mutex_unlock(&clients->lock);
     return found;
+}
+
+int mpv_audio_callback(mpv_handle *ctx, void *buffer, int len)
+{
+    if (!ctx->mpctx->initialized || !ctx->mpctx->ao) {
+        return MPV_ERROR_UNINITIALIZED;
+    }
+
+    if (!buffer || !len) {
+        return MPV_ERROR_INVALID_PARAMETER;
+    }
+
+    return libmpv_audio_callback(ctx->mpctx->ao, buffer, len);
 }

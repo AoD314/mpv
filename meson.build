@@ -71,6 +71,7 @@ sources = files(
     'audio/format.c',
     'audio/out/ao.c',
     'audio/out/ao_lavc.c',
+    'audio/out/ao_libmpv.c',
     'audio/out/ao_null.c',
     'audio/out/ao_pcm.c',
     'audio/out/buffer.c',
